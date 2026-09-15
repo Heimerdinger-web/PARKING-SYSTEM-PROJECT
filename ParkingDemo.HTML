@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smart Parking Management System - Demo</title>
+<style>
+  * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+  body { margin: 0; background: #f4f6f8; color: #2c3e50; }
+  header { background: #1f3a5f; color: white; padding: 20px 30px; }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: 0.8; }
+  .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab-btn {
+    padding: 10px 18px; border: none; border-radius: 8px 8px 0 0;
+    background: #dfe6ec; cursor: pointer; font-size: 14px; font-weight: 600;
+  }
+  .tab-btn.active { background: white; color: #1f3a5f; border-bottom: 3px solid #1f3a5f; }
+  .panel { background: white; border-radius: 0 8px 8px 8px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .hidden { display: none; }
+
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 16px 0; }
+  .slot { padding: 18px 8px; border-radius: 8px; text-align: center; color: white; font-weight: bold; }
+  .slot.free { background: #2ecc71; }
+  .slot.occupied { background: #e74c3c; }
+
+  .info-box { background: #eaf2fb; border-left: 4px solid #1f3a5f; padding: 10px 14px; border-radius: 4px; margin-top: 10px; font-size: 14px; }
+
+  input[type=text], input[type=number] {
+    padding: 9px 12px; border: 1px solid #ccd6e0; border-radius: 6px; font-size: 14px; width: 260px;
+  }
+  button.action {
+    padding: 9px 18px; border: none; border-radius: 6px; background: #1f3a5f;
+    color: white; font-weight: 600; cursor: pointer; font-size: 14px; margin-left: 8px;
+  }
+  button.action:hover { background: #16283f; }
+  button.pay { background: #27ae60; }
+  button.pay:hover { background: #1e8449; }
+
+  .msg { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 14px; }
+  .msg.success { background: #d4efdf; color: #1e8449; }
+  .msg.warning { background: #fdebd0; color: #935116; }
+
+  .bill { margin-top: 16px; border: 1px solid #e0e6ec; border-radius: 8px; padding: 16px; background: #fafbfc; }
+  .bill p { margin: 4px 0; font-size: 14px; }
+  .barrier { margin-top: 14px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
+  .barrier.open { background: #d4efdf; color: #1e8449; }
+  .barrier.closed { background: #fdecea; color: #c0392b; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left; }
+  th { background: #f0f3f6; }
+
+  .demo-note { font-size: 12px; color: #7f8c9a; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🅿️ Smart Parking Management System</h1>
+  <p>DSA Assignment — Multimedia University of Kenya — Browser Demo (no install needed)</p>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('display')">📊 Slot Display</button>
+    <button class="tab-btn" onclick="showTab('entry')">🚗 Vehicle Entry</button>
+    <button class="tab-btn" onclick="showTab('exit')">💳 Exit & Billing</button>
+    <button class="tab-btn" onclick="showTab('log')">📜 Transaction Log</button>
+  </div>
+
+  <!-- SLOT DISPLAY -->
+  <div id="tab-display" class="panel">
+    <h3>Live Slot Availability</h3>
+    <div id="grid" class="grid"></div>
+    <div class="info-box" id="availabilityInfo"></div>
+  </div>
+
+  <!-- ENTRY -->
+  <div id="tab-entry" class="panel hidden">
+    <h3>Check In a Vehicle</h3>
+    <input type="text" id="entryRegNo" placeholder="e.g. KDA 123A">
+    <button class="action" onclick="checkIn()">Check In</button>
+    <div id="entryMsg"></div>
+  </div>
+
+  <!-- EXIT & BILLING -->
+  <div id="tab-exit" class="panel hidden">
+    <h3>Check Out a Vehicle</h3>
+    <input type="text" id="exitRegNo" placeholder="Registration number">
+    <button class="action" onclick="calculateFeeForExit()">Calculate Fee</button>
+
+    <p class="demo-note">
+      Demo helper (not part of the real system): backdate the entry time to test
+      the higher pricing tiers without waiting hours.
+      <br>Simulate elapsed minutes:
+      <input type="number" id="simMinutes" style="width:90px" placeholder="0">
+    </p>
+
+    <div id="exitMsg"></div>
+    <div id="billBox" class="hidden bill">
+      <p><b>Vehicle:</b> <span id="billReg"></span></p>
+      <p><b>Slot:</b> <span id="billSlot"></span></p>
+      <p><b>Entry Time:</b> <span id="billEntry"></span></p>
+      <p><b>Duration Parked:</b> <span id="billDuration"></span> minutes</p>
+      <p><b>Fee Due:</b> Ksh <span id="billFee"></span></p>
+      <div id="barrierBox" class="barrier closed">🔴 BARRIER CLOSED</div>
+      <button class="action pay" onclick="confirmPayment()">Confirm Payment & Open Barrier</button>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div id="tab-log" class="panel hidden">
+    <h3>Full Transaction Log</h3>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Reg No</th><th>Slot</th><th>Entry</th><th>Exit</th><th>Fee</th><th>Payment</th><th>Barrier</th></tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ---------- IN-MEMORY "DATABASE" (plain JS objects, no browser storage) ----------
+const TOTAL_SLOTS = 10;
+let slots = Array.from({length: TOTAL_SLOTS}, (_, i) => ({ id: i + 1, status: 'Available' }));
+let transactions = []; // { id, regNo, slotId, entryTime(Date), exitTime, fee, paymentStatus, barrierStatus }
+let nextTxnId = 1;
+let currentBill = null;
+
+// ---------- TABS ----------
+function showTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  if (name === 'display') renderGrid();
+  if (name === 'log') renderLog();
+}
+
+// ---------- SLOT DISPLAY MODULE ----------
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  slots.forEach(slot => {
+    const div = document.createElement('div');
+    div.className = 'slot ' + (slot.status === 'Available' ? 'free' : 'occupied');
+    div.innerText = 'Slot ' + slot.id + '\n' + (slot.status === 'Available' ? 'FREE' : 'FULL');
+    div.style.whiteSpace = 'pre';
+    grid.appendChild(div);
+  });
+  const available = slots.filter(s => s.status === 'Available').length;
+  document.getElementById('availabilityInfo').innerText =
+    `Available slots: ${available} / ${TOTAL_SLOTS}`;
+}
+
+// ---------- ENTRY MODULE ----------
+function findActiveTransactionByReg(regNo) {
+  return transactions.find(t => t.regNo === regNo && !t.exitTime);
+}
+
+function getNextFreeSlot() {
+  const free = slots.filter(s => s.status === 'Available').sort((a, b) => a.id - b.id);
+  return free.length ? free[0] : null;
+}
+
+function checkIn() {
+  const input = document.getElementById('entryRegNo');
+  const regNo = input.value.trim().toUpperCase();
+  const msgBox = document.getElementById('entryMsg');
+
+  if (!regNo) return showMsg(msgBox, 'Please type a vehicle registration number.', 'warning');
+  if (findActiveTransactionByReg(regNo)) return showMsg(msgBox, `${regNo} is already checked in.`, 'warning');
+
+  const slot = getNextFreeSlot();
+  if (!slot) return showMsg(msgBox, 'Sorry, the parking lot is full.', 'warning');
+
+  slot.status = 'Occupied';
+  transactions.push({
+    id: nextTxnId++, regNo, slotId: slot.id, entryTime: new Date(),
+    exitTime: null, fee: null, paymentStatus: 'Pending', barrierStatus: 'Closed'
+  });
+
+  showMsg(msgBox, `${regNo} checked in at slot ${slot.id}.`, 'success');
+  input.value = '';
+  renderGrid();
+}
+
+// ---------- BILLING MODULE ----------
+function calculateFee(durationMinutes) {
+  if (durationMinutes <= 30) return 0;
+  if (durationMinutes <= 120) return 50;
+  if (durationMinutes <= 240) return 100;
+  if (durationMinutes <= 360) return 300;
+  return 500;
+}
+
+function calculateFeeForExit() {
+  const regNo = document.getElementById('exitRegNo').value.trim().toUpperCase();
+  const msgBox = document.getElementById('exitMsg');
+  const billBox = document.getElementById('billBox');
+  const txn = findActiveTransactionByReg(regNo);
+
+  if (!txn) {
+    billBox.classList.add('hidden');
+    return showMsg(msgBox, 'No matching active vehicle found.', 'warning');
+  }
+  msgBox.innerHTML = '';
+
+  const simMinutes = parseFloat(document.getElementById('simMinutes').value);
+  let durationMinutes;
+  if (!isNaN(simMinutes) && simMinutes > 0) {
+    durationMinutes = simMinutes; // demo override
+  } else {
+    durationMinutes = (new Date() - txn.entryTime) / 60000;
+  }
+
+  const fee = calculateFee(durationMinutes);
+  currentBill = { txn, fee, durationMinutes };
+
+  document.getElementById('billReg').innerText = txn.regNo;
+  document.getElementById('billSlot').innerText = txn.slotId;
+  document.getElementById('billEntry').innerText = txn.entryTime.toLocaleString();
+  document.getElementById('billDuration').innerText = durationMinutes.toFixed(1);
+  document.getElementById('billFee').innerText = fee;
+  document.getElementById('barrierBox').className = 'barrier closed';
+  document.getElementById('barrierBox').innerText = '🔴 BARRIER CLOSED';
+  billBox.classList.remove('hidden');
+}
+
+// ---------- PAYMENT & BARRIER MODULE ----------
+function confirmPayment() {
+  if (!currentBill) return;
+  const { txn, fee } = currentBill;
+
+  txn.exitTime = new Date();
+  txn.fee = fee;
+  txn.paymentStatus = 'Paid';
+  txn.barrierStatus = 'Open';
+
+  const slot = slots.find(s => s.id === txn.slotId);
+  slot.status = 'Available';
+
+  document.getElementById('barrierBox').className = 'barrier open';
+  document.getElementById('barrierBox').innerText = '🟢 BARRIER OPEN — vehicle may exit';
+  showMsg(document.getElementById('exitMsg'), `Payment of Ksh ${fee} confirmed. Slot ${txn.slotId} is now free.`, 'success');
+
+  renderGrid();
+  currentBill = null;
+}
+
+// ---------- LOG MODULE ----------
+function renderLog() {
+  const body = document.getElementById('logBody');
+  body.innerHTML = '';
+  transactions.slice().reverse().forEach(t => {
+    body.innerHTML += `<tr>
+      <td>${t.id}</td><td>${t.regNo}</td><td>${t.slotId}</td>
+      <td>${t.entryTime.toLocaleTimeString()}</td>
+      <td>${t.exitTime ? t.exitTime.toLocaleTimeString() : '-'}</td>
+      <td>${t.fee !== null ? 'Ksh ' + t.fee : '-'}</td>
+      <td>${t.paymentStatus}</td><td>${t.barrierStatus}</td>
+    </tr>`;
+  });
+}
+
+function showMsg(box, text, type) {
+  box.innerHTML = `<div class="msg ${type}">${text}</div>`;
+}
+
+// initial render
+renderGrid();
+</script>
+</body>
+</html>
