@@ -200,7 +200,7 @@ smart-parking-system/
 > the assignment submission. `app.py` is the actual Python/SQLite
 > system being graded.
 
-## 6. Pushing to GitHub
+## 6. Pushing to GitHub (I added this for my own deep understanding of GitHub and it's commands)
 
 ```bash
 # From inside the project folder:
