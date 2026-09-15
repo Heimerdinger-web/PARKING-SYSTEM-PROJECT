@@ -10,7 +10,7 @@ free in real time, records a car when it enters, and works out the
 fee (based on Kenyan pricing tiers) plus simulates a payment gate and
 barrier when it leaves.
 
-Live demo: [STREAMLIT COMMUNITY CLOUD LINK]
+Live demo: [STREAMLIT COMMUNITY CLOUD LINK: https://hillary-parking-system-project-n26sgcaxwt9zhsuxond9lt.streamlit.app/]
 
 ---
 
@@ -200,7 +200,7 @@ smart-parking-system/
 > the assignment submission. `app.py` is the actual Python/SQLite
 > system being graded.
 
-## 6. Pushing to GitHub
+## 6. Pushing to GitHub (I added this for my own understanding of Github and its commands)
 
 ```bash
 # From inside the project folder:
@@ -224,5 +224,6 @@ git push -u origin main
 - Real M-Pesa STK Push integration instead of a simulated "Confirm
   Payment" button.
 - Multi-lot / multi-branch support.
-- Admin login for viewing full transaction history and daily revenue.#   P A R K I N G - S Y S T E M - P R O J E C T  
+- Admin login for viewing full transaction history and daily revenue.#   P A R K I N G - S Y S T E M - P R O J E C T 
+ 
  
